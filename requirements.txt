@@ -17,7 +17,5 @@ pypdf>=4.0.0
 # Environment & Configuration
 python-dotenv>=1.0.0
 
-# Optional / Ancillary Features
-streamlit>=1.30.0
+# Background Scheduler
 apscheduler>=3.10.0
-sqlalchemy>=2.0.0
