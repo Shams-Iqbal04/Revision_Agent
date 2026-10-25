@@ -6,3 +6,5 @@ python-dotenv
 streamlit
 apscheduler
 sqlalchemy
+fastapi
+uvicorn
