@@ -46,7 +46,6 @@ def test_code_execution(code: str) -> str:
     redirected_output = io.StringIO()
     sys.stdout = redirected_output
     try:
-        # Limited execution environment
         exec_globals = {"__builtins__": __builtins__}
         exec(code, exec_globals)
         output = redirected_output.getvalue()

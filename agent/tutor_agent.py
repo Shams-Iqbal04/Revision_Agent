@@ -48,7 +48,6 @@ def get_tutor_agent():
 def step_tutor(messages: List[Any], topic: str, difficulty: str = "Beginner") -> Dict[str, Any]:
     agent = get_tutor_agent()
     
-    # Ensure system prompt is at the head
     sys_msg = SystemMessage(
         content=TUTOR_SYSTEM_PROMPT.format(topic=topic, difficulty=difficulty)
     )
@@ -59,9 +58,7 @@ def step_tutor(messages: List[Any], topic: str, difficulty: str = "Beginner") ->
     
     tool_calls = getattr(response, "tool_calls", [])
     
-    # In case no tool call was generated, provide a default question tool call
     if not tool_calls and response.content:
-        # If response has text without tool call, convert it to a natural question or explanation
         tool_calls = [{
             "name": "ask_question",
             "args": {"question": response.content},

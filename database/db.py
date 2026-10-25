@@ -13,7 +13,6 @@ def init_db():
     conn = get_connection()
     cursor = conn.cursor()
     
-    # Sessions table
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS sessions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -24,7 +23,6 @@ def init_db():
     )
     """)
 
-    # Flashcards table with confidence rating
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS flashcards (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,7 +34,6 @@ def init_db():
     )
     """)
 
-    # Quiz Results table
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS quiz_results (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

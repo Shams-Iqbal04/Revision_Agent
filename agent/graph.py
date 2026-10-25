@@ -10,8 +10,6 @@ from agent.prompts import (
 
 from utils.llm import get_llm
 
-
-
 llm = get_llm()
 
 
@@ -21,35 +19,22 @@ def extract_text(response) -> str:
     return str(response).strip()
 
 
-# ============================================================
-# NOTES
-# ============================================================
-
 def generate_notes(state: RevisionState):
-
     prompt = NOTES_PROMPT.format(
         topic=state["topic"],
         difficulty=state["difficulty"]
     )
-
     response = llm.invoke(prompt)
-
     return {
         "notes": extract_text(response)
     }
 
 
-# ============================================================
-# QUESTIONS
-# ============================================================
-
 def generate_questions(state: RevisionState):
-
     prompt = QUESTIONS_PROMPT.format(
         topic=state["topic"],
         difficulty=state["difficulty"]
     )
-
     response = llm.invoke(prompt)
     text = extract_text(response)
 
@@ -70,12 +55,7 @@ def generate_questions(state: RevisionState):
     }
 
 
-# ============================================================
-# FLASHCARDS
-# ============================================================
-
 def generate_flashcards(state: RevisionState):
-
     prompt = FLASHCARD_PROMPT.format(
         topic=state["topic"]
     )
@@ -87,7 +67,6 @@ def generate_flashcards(state: RevisionState):
     import re
     flashcards = []
 
-    # Pattern matches Question ... Answer ... across blocks
     pattern = re.compile(
         r"(?:Card\s*\d+[\:\.\s]*)?"
         r"(?:\#+\s*)?"
@@ -108,7 +87,6 @@ def generate_flashcards(state: RevisionState):
                 "answer": a_clean
             })
 
-    # Secondary fallback parsing
     if not flashcards and text:
         parts = re.split(r"(?i)(?=Card\s*\d+)", text)
         for part in parts:
@@ -125,7 +103,6 @@ def generate_flashcards(state: RevisionState):
             if q_str and a_str:
                 flashcards.append({"question": q_str, "answer": a_str})
 
-    # Ultimate fallback if model was non-compliant
     if not flashcards and text:
         flashcards.append({
             "question": "Key Concepts to Revise",
@@ -137,31 +114,19 @@ def generate_flashcards(state: RevisionState):
     }
 
 
-# ============================================================
-# EVALUATION
-# ============================================================
-
 def evaluate_revision(state: RevisionState):
-
     prompt = EVALUATION_PROMPT.format(
         topic=state["topic"],
         questions=state["questions"],
         answers=state["user_answers"]
     )
-
     response = llm.invoke(prompt)
-
     return {
         "feedback": extract_text(response)
     }
 
 
-# ============================================================
-# BUILD LANGGRAPH
-# ============================================================
-
 def build_graph():
-
     graph = StateGraph(RevisionState)
 
     graph.add_node("generate_notes", generate_notes)
@@ -169,7 +134,6 @@ def build_graph():
     graph.add_node("generate_flashcards", generate_flashcards)
     graph.add_node("evaluate_revision", evaluate_revision)
 
-    # Run questions and flashcards in parallel after notes are generated
     graph.add_edge(START, "generate_notes")
     graph.add_edge("generate_notes", "generate_questions")
     graph.add_edge("generate_notes", "generate_flashcards")
@@ -178,10 +142,6 @@ def build_graph():
 
     return graph.compile()
 
-
-# ============================================================
-# FINAL AGENT
-# ============================================================
 
 revision_agent = build_graph()
 
@@ -195,5 +155,3 @@ def ask_tutor(topic: str, notes: str, user_query: str) -> str:
     )
     response = llm.invoke(prompt)
     return extract_text(response)
-
-

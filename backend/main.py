@@ -1,21 +1,7 @@
-"""
-FastAPI backend for the AI Revision Agent.
-
-Endpoints
----------
-POST /api/session/start   — begin a new tutoring session
-POST /api/session/respond  — submit a student answer
-POST /api/session/reset    — delete a session
-POST /api/upload           — extract text from PDF / TXT / MD
-GET  /                     — serve the frontend SPA
-"""
-
 import os
 import io
 import sys
 
-# Make sure project root is on sys.path so `agent.*` / `utils.*` imports work
-# regardless of how the server is launched.
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT_DIR not in sys.path:
     sys.path.insert(0, ROOT_DIR)
@@ -29,9 +15,6 @@ from typing import Optional
 
 from backend.session_manager import SessionManager
 
-# ============================================================
-# App & global state
-# ============================================================
 app = FastAPI(title="AI Revision Agent API")
 
 app.add_middleware(
@@ -45,9 +28,6 @@ manager = SessionManager()
 
 FRONTEND_DIR = os.path.join(ROOT_DIR, "frontend")
 
-# ============================================================
-# Pydantic models
-# ============================================================
 class StartRequest(BaseModel):
     topic: str
     difficulty: str = "Beginner"
@@ -67,9 +47,6 @@ class DoubtRequest(BaseModel):
     session_id: str
     question: str
 
-# ============================================================
-# API routes
-# ============================================================
 @app.post("/api/session/start")
 async def start_session(req: StartRequest):
     topic = req.topic
@@ -147,12 +124,8 @@ async def upload_file(file: UploadFile = File(...)):
     return {"text": text, "chars": len(text), "filename": file.filename}
 
 
-# ============================================================
-# Serve frontend
-# ============================================================
 @app.get("/")
 async def index():
     return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
 
-# Static assets (CSS, JS, images) — mounted AFTER explicit routes
 app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")

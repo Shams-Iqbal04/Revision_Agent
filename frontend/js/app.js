@@ -1,14 +1,9 @@
-/* ================================================================
-   AI Revision Agent — Frontend Application Logic
-   Handles session management, API calls, and dynamic UI rendering.
-   ================================================================ */
 
-// ---- State ----
+
 let sessionId = null;
 let uploadedDocText = "";
-let quizStarted = false;   // tracks whether Q&A has begun
+let quizStarted = false;
 
-// ---- DOM refs ----
 const $ = (id) => document.getElementById(id);
 
 const startScreen    = $("start-screen");
@@ -23,12 +18,10 @@ const topicDisplay   = $("session-topic");
 const levelDisplay   = $("session-level");
 const statQuestions  = $("stat-questions");
 
-// ---- Doubt chat DOM refs ----
 const doubtMessages  = $("doubt-messages");
 const doubtInput     = $("doubt-input");
 const doubtSubmitBtn = $("doubt-submit-btn");
 
-// ---- File upload wiring ----
 const uploadArea  = $("upload-area");
 const fileInput   = $("file-upload");
 const uploadLabel = $("upload-label");
@@ -59,7 +52,6 @@ fileInput.addEventListener("change", async () => {
     }
 });
 
-// ---- Auto-resize textareas ----
 answerInput.addEventListener("input", () => {
     answerInput.style.height = "auto";
     answerInput.style.height = Math.min(answerInput.scrollHeight, 140) + "px";
@@ -70,7 +62,6 @@ doubtInput.addEventListener("input", () => {
     doubtInput.style.height = Math.min(doubtInput.scrollHeight, 110) + "px";
 });
 
-// ---- Enter to submit (Shift+Enter for newline) ----
 answerInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
@@ -85,9 +76,6 @@ doubtInput.addEventListener("keydown", (e) => {
     }
 });
 
-// ============================================================
-// API helpers
-// ============================================================
 async function apiPost(endpoint, body) {
     const res = await fetch(endpoint, {
         method: "POST",
@@ -101,9 +89,6 @@ async function apiPost(endpoint, body) {
     return res.json();
 }
 
-// ============================================================
-// Session lifecycle
-// ============================================================
 async function startSession() {
     const topic = $("topic-input").value.trim();
     const difficulty = $("difficulty-select").value;
@@ -125,16 +110,14 @@ async function startSession() {
         sessionId = data.session_id;
         quizStarted = false;
 
-        // Switch to session screen
         topicDisplay.textContent = data.topic || topic;
         levelDisplay.textContent = data.difficulty;
         startScreen.classList.remove("active");
         sessionScreen.classList.add("active");
 
-        // Hide input bar — user needs to click "Start Q&A" first
         inputBar.classList.add("hidden");
 
-        renderAgentTurn(data, true);  // true = initial notes turn
+        renderAgentTurn(data, true);
         updateStats(data);
         hideLoader();
         scrollToBottom();
@@ -145,16 +128,13 @@ async function startSession() {
 }
 
 async function startQuiz() {
-    // Remove the "Start Q&A" button
     const btn = $("start-quiz-btn");
     if (btn) btn.remove();
 
-    // Show input bar
     inputBar.classList.remove("hidden");
     quizStarted = true;
     answerInput.placeholder = "Type your answer here…";
 
-    // Show typing indicator
     showTypingIndicator();
     scrollToBottom();
 
@@ -179,17 +159,14 @@ async function submitAnswer() {
     const answer = answerInput.value.trim();
     if (!answer || !sessionId) return;
 
-    // Disable input while processing
     answerInput.disabled = true;
     submitBtn.disabled = true;
 
-    // Render student bubble immediately
     renderStudentAnswer(answer);
     answerInput.value = "";
     answerInput.style.height = "auto";
     scrollToBottom();
 
-    // Show typing indicator
     showTypingIndicator();
 
     try {
@@ -223,13 +200,11 @@ async function endQuiz() {
     const confirmEnd = confirm("Are you sure you want to finish the Q&A session and get your final score?");
     if (!confirmEnd) return;
 
-    // Disable inputs
     answerInput.disabled = true;
     submitBtn.disabled = true;
     const endBtn = $("end-quiz-btn");
     if (endBtn) endBtn.disabled = true;
 
-    // Show typing indicator
     showTypingIndicator();
     scrollToBottom();
 
@@ -254,9 +229,6 @@ async function endQuiz() {
     scrollToBottom();
 }
 
-// ============================================================
-// Doubt Chatbot Logic
-// ============================================================
 async function submitDoubt() {
     const question = doubtInput.value.trim();
     if (!question || !sessionId) return;
@@ -266,13 +238,11 @@ async function submitDoubt() {
     doubtInput.disabled = true;
     doubtSubmitBtn.disabled = true;
 
-    // 1. Render student doubt bubble
     const userBubble = createElement("div", "doubt-bubble-user");
     userBubble.textContent = question;
     doubtMessages.appendChild(userBubble);
     scrollDoubtToBottom();
 
-    // 2. Typing indicator
     const typingEl = createElement("div", "doubt-typing");
     typingEl.id = "doubt-typing";
     typingEl.innerHTML = `<div class="dot"></div><div class="dot"></div><div class="dot"></div>`;
@@ -321,7 +291,7 @@ async function resetSession() {
     if (sessionId) {
         try {
             await apiPost("/api/session/reset", { session_id: sessionId });
-        } catch (_) { /* ignore */ }
+        } catch (_) {  }
     }
 
     sessionId = null;
@@ -334,7 +304,6 @@ async function resetSession() {
     const endBtn = $("end-quiz-btn");
     if (endBtn) endBtn.disabled = false;
 
-    // Reset doubt messages
     doubtMessages.innerHTML = `
         <div class="doubt-welcome">
             <div class="doubt-welcome-icon">💡</div>
@@ -346,7 +315,6 @@ async function resetSession() {
     `;
     doubtInput.value = "";
 
-    // Reset form
     $("topic-input").value = "";
     uploadedDocText = "";
     uploadLabel.textContent = "📄 Choose PDF / TXT";
@@ -355,29 +323,22 @@ async function resetSession() {
     fileInput.value = "";
 }
 
-// ============================================================
-// Rendering
-// ============================================================
 function renderAgentTurn(data, isInitialNotes) {
-    // 1. Render agent text (correct/wrong feedback)
     if (data.agent_text && data.agent_text.trim()) {
         const bubble = createElement("div", "agent-text-bubble");
         bubble.innerHTML = `🤖 ${escapeAndFormat(data.agent_text)}`;
         conversation.appendChild(bubble);
     }
 
-    // 2. Render each action
     for (const action of (data.actions || [])) {
         const card = renderActionCard(action);
         if (card) conversation.appendChild(card);
     }
 
-    // 3. If this is the initial notes turn, add "Start Q&A" button
     if (isInitialNotes) {
         renderStartQuizButton();
     }
 
-    // 4. Update placeholder based on context
     if (quizStarted) {
         const hasQuestion = (data.actions || []).some(a => a.type === "ask_question");
         answerInput.placeholder = hasQuestion
@@ -501,7 +462,6 @@ function renderErrorBubble(message) {
     conversation.appendChild(bubble);
 }
 
-// ---- Typing indicator ----
 function showTypingIndicator() {
     const el = createElement("div", "typing-indicator");
     el.id = "typing-dots";
@@ -515,12 +475,10 @@ function removeTypingIndicator() {
     if (el) el.remove();
 }
 
-// ---- Stats ----
 function updateStats(data) {
     statQuestions.textContent = data.questions_answered ?? 0;
 }
 
-// ---- Loader ----
 function showLoader(text) {
     loaderText.textContent = text;
     loaderOverlay.classList.remove("hidden");
@@ -529,14 +487,12 @@ function hideLoader() {
     loaderOverlay.classList.add("hidden");
 }
 
-// ---- Scroll ----
 function scrollToBottom() {
     requestAnimationFrame(() => {
         conversation.scrollTop = conversation.scrollHeight;
     });
 }
 
-// ---- Confetti ----
 function launchConfetti() {
     const wrapper = createElement("div", "confetti-wrapper");
     document.body.appendChild(wrapper);
@@ -556,9 +512,6 @@ function launchConfetti() {
     setTimeout(() => wrapper.remove(), 5000);
 }
 
-// ============================================================
-// Utilities
-// ============================================================
 function createElement(tag, className) {
     const el = document.createElement(tag);
     if (className) el.className = className;
@@ -571,26 +524,16 @@ function esc(str) {
     return div.innerHTML;
 }
 
-/**
- * Escape HTML and convert markdown-like formatting to HTML:
- *  - **bold**
- *  - `inline code`
- *  - Lines starting with - or * as list items
- *  - Numbered lists (1. 2. 3.)
- *  - Newlines to <br>
- */
+
 function escapeAndFormat(text) {
     if (!text) return "";
 
     let escaped = esc(text);
 
-    // Bold: **text**
     escaped = escaped.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
 
-    // Inline code: `code`
     escaped = escaped.replace(/`([^`]+)`/g, '<code style="background:#F3F4F6;padding:2px 6px;border-radius:4px;font-size:0.88em;">$1</code>');
 
-    // Convert lines to array for list processing
     const lines = escaped.split("\n");
     let html = "";
     let inUl = false;
@@ -599,7 +542,6 @@ function escapeAndFormat(text) {
     for (let line of lines) {
         const trimmed = line.trim();
 
-        // Unordered list
         const ulMatch = trimmed.match(/^[-*]\s+(.+)/);
         if (ulMatch) {
             if (!inUl) { html += "<ul>"; inUl = true; }
@@ -608,7 +550,6 @@ function escapeAndFormat(text) {
             continue;
         }
 
-        // Ordered list
         const olMatch = trimmed.match(/^\d+[\.)\]]\s+(.+)/);
         if (olMatch) {
             if (!inOl) { html += "<ol>"; inOl = true; }
@@ -617,11 +558,9 @@ function escapeAndFormat(text) {
             continue;
         }
 
-        // Close any open lists
         if (inUl) { html += "</ul>"; inUl = false; }
         if (inOl) { html += "</ol>"; inOl = false; }
 
-        // Regular line
         html += trimmed ? trimmed + "<br>" : "<br>";
     }
 

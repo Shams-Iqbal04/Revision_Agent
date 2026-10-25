@@ -1,9 +1,3 @@
-"""
-Session Manager — manages in-memory tutoring sessions.
-Each session holds its LangChain message chain so the agent
-has full conversational context across turns.
-"""
-
 import uuid
 from typing import Dict, List, Any, Optional
 from langchain_core.messages import HumanMessage, ToolMessage
@@ -11,27 +5,21 @@ from agent.tutor_agent import step_tutor
 
 
 class Session:
-    """Represents a single tutoring session."""
-
     def __init__(self, topic: str, difficulty: str):
         self.id: str = str(uuid.uuid4())
         self.topic: str = topic
         self.difficulty: str = difficulty
-        self.messages: list = []           # LangChain message objects
-        self.action_history: list = []     # list of step_tutor() results
-        self.student_answers: list = []    # list of {"answer": str, "after_action_idx": int}
-        self.doubt_history: list = []      # list of {"role": str, "content": str} for doubt chat
+        self.messages: list = []
+        self.action_history: list = []
+        self.student_answers: list = []
+        self.doubt_history: list = []
         self.questions_answered: int = 0
         self.is_concluded: bool = False
 
 
 class SessionManager:
-    """Thread-safe-ish in-memory session store."""
-
     def __init__(self):
         self._sessions: Dict[str, Session] = {}
-
-    # ---- CRUD ----------------------------------------------------
 
     def create(self, topic: str, difficulty: str) -> Session:
         session = Session(topic, difficulty)
@@ -44,11 +32,7 @@ class SessionManager:
     def delete(self, session_id: str) -> None:
         self._sessions.pop(session_id, None)
 
-    # ---- Session lifecycle ----------------------------------------
-
     def start(self, session_id: str) -> dict:
-        """Send the initial message and get the first agent response
-        (revision notes ONLY, no question yet)."""
         session = self.get(session_id)
         if not session:
             raise ValueError("Session not found")
@@ -73,14 +57,12 @@ class SessionManager:
         return self._format_response(session, res)
 
     def respond(self, session_id: str, answer: str) -> dict:
-        """Handle a student answer and return the next agent action(s)."""
         session = self.get(session_id)
         if not session:
             raise ValueError("Session not found")
 
         current_idx = len(session.action_history) - 1
 
-        # Persist the student's answer for the UI timeline
         session.student_answers.append(
             {"answer": answer, "after_action_idx": current_idx}
         )
@@ -88,20 +70,16 @@ class SessionManager:
         latest = session.action_history[-1] if session.action_history else None
         latest_tools = latest.get("tool_calls", []) if latest else []
 
-        # Bump counter if the latest turn contained a question
         if any(tc["name"] == "ask_question" for tc in latest_tools):
             session.questions_answered += 1
 
-        # Acknowledge every tool call from the last turn
         for tc in latest_tools:
             session.messages.append(
                 ToolMessage(content="Action presented to student.", tool_call_id=tc["id"])
             )
 
-        # Append the student's text
         session.messages.append(HumanMessage(content=answer))
 
-        # Get the next agent response
         res = step_tutor(
             session.messages,
             topic=session.topic,
@@ -110,12 +88,10 @@ class SessionManager:
         session.messages.append(res["response"])
         session.action_history.append(res)
 
-        # Check for session conclusion
         for tc in res.get("tool_calls", []):
             if tc["name"] == "conclude_session":
                 session.is_concluded = True
 
-        # Guarantee continuous Q&A: If the agent didn't include a question, add one
         has_question = any(tc.get("name") == "ask_question" for tc in res.get("tool_calls", []))
         if not has_question and not session.is_concluded:
             from utils.llm import get_llm
@@ -137,7 +113,6 @@ class SessionManager:
         return self._format_response(session, res)
 
     def conclude(self, session_id: str) -> dict:
-        """Explicitly conclude the revision session upon user request."""
         session = self.get(session_id)
         if not session:
             raise ValueError("Session not found")
@@ -145,7 +120,6 @@ class SessionManager:
         latest = session.action_history[-1] if session.action_history else None
         latest_tools = latest.get("tool_calls", []) if latest else []
 
-        # Acknowledge any pending tool calls from last turn
         for tc in latest_tools:
             session.messages.append(
                 ToolMessage(content="Action presented to student.", tool_call_id=tc["id"])
@@ -173,11 +147,9 @@ class SessionManager:
         return self._format_response(session, res)
 
     def ask_doubt(self, session_id: str, question: str) -> dict:
-        """Handle a student's doubt or question regarding the topic."""
         session = self.get(session_id)
         topic = session.topic if session else "General Topic"
 
-        # Collect notes if available from action history
         notes_text = ""
         if session:
             for act in session.action_history:
@@ -199,7 +171,6 @@ class SessionManager:
 
         messages = [system_msg]
         if session:
-            # Include recent doubt history for conversational context
             for item in session.doubt_history[-6:]:
                 if item["role"] == "user":
                     messages.append(HumanMessage(content=item["content"]))
@@ -221,8 +192,6 @@ class SessionManager:
             session.doubt_history.append({"role": "assistant", "content": answer})
 
         return {"answer": answer}
-
-    # ---- Helpers --------------------------------------------------
 
     @staticmethod
     def _format_response(session: "Session", res: dict) -> dict:

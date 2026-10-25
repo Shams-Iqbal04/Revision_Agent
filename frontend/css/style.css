@@ -1,10 +1,6 @@
-/* ================================================================
-   AI Revision Agent — Stylesheet
-   Modern, clean design with Inter font, card-based layout, smooth
-   animations, and a chat-style conversation interface.
-   ================================================================ */
 
-/* ---- CSS Variables ---- */
+
+
 :root {
     --primary: #4F46E5;
     --primary-light: #EEF2FF;
@@ -42,7 +38,7 @@
     --transition: 0.25s ease;
 }
 
-/* ---- Reset & Base ---- */
+
 *,
 *::before,
 *::after {
@@ -61,7 +57,7 @@ html, body {
     -webkit-font-smoothing: antialiased;
 }
 
-/* ---- Screen system ---- */
+
 .screen {
     display: none;
 }
@@ -69,9 +65,7 @@ html, body {
     display: flex;
 }
 
-/* ================================================================
-   START SCREEN
-   ================================================================ */
+
 #start-screen {
     min-height: 100vh;
     align-items: center;
@@ -124,7 +118,7 @@ html, body {
     border: 1px solid var(--border);
 }
 
-/* ---- Form elements ---- */
+
 .form-group {
     margin-bottom: 20px;
 }
@@ -202,7 +196,7 @@ html, body {
     display: none !important;
 }
 
-/* ---- Buttons ---- */
+
 .btn-primary {
     display: block;
     width: 100%;
@@ -239,16 +233,14 @@ html, body {
     margin-top: 24px;
 }
 
-/* ================================================================
-   SESSION SCREEN
-   ================================================================ */
+
 #session-screen {
     flex-direction: column;
     height: 100vh;
     overflow: hidden;
 }
 
-/* ---- Top Bar ---- */
+
 .top-bar {
     display: flex;
     align-items: center;
@@ -323,7 +315,7 @@ html, body {
     background: #FEF2F2;
 }
 
-/* ---- Session Body Layout (Split Screen) ---- */
+
 .session-body {
     flex: 1;
     display: flex;
@@ -342,7 +334,7 @@ html, body {
     background: var(--bg);
 }
 
-/* ---- Conversation Area ---- */
+
 .conversation {
     flex: 1;
     overflow-y: auto;
@@ -352,7 +344,7 @@ html, body {
     gap: 16px;
 }
 
-/* ---- Agent text bubble ---- */
+
 .agent-text-bubble {
     max-width: 85%;
     padding: 14px 18px;
@@ -365,7 +357,7 @@ html, body {
     animation: slideUp 0.35s ease;
 }
 
-/* ---- Action Cards ---- */
+
 .action-card {
     max-width: 85%;
     border-radius: var(--radius);
@@ -390,7 +382,7 @@ html, body {
     margin-bottom: 10px;
 }
 
-/* --- Notes card --- */
+
 .card-notes {
     background: var(--notes-bg);
     border: 1px solid var(--notes-border);
@@ -429,7 +421,7 @@ html, body {
     margin-bottom: 4px;
 }
 
-/* --- Question card --- */
+
 .card-question {
     background: var(--question-bg);
     border: 1px solid var(--question-border);
@@ -449,7 +441,7 @@ html, body {
     color: #6366F1;
 }
 
-/* --- Explanation card --- */
+
 .card-explanation {
     background: var(--explain-bg);
     border: 1px solid var(--explain-border);
@@ -480,7 +472,7 @@ html, body {
     white-space: pre-wrap;
 }
 
-/* --- Code card --- */
+
 .card-code {
     background: var(--code-bg);
     border: 1px solid var(--code-border);
@@ -491,7 +483,7 @@ html, body {
     border: 1px solid var(--code-border);
 }
 
-/* --- Conclude card --- */
+
 .card-conclude {
     background: var(--conclude-bg);
     border: 1px solid var(--conclude-border);
@@ -522,7 +514,7 @@ html, body {
     color: var(--conclude-text);
 }
 
-/* ---- Student Answer Bubble ---- */
+
 .student-bubble {
     max-width: 75%;
     align-self: flex-end;
@@ -547,14 +539,14 @@ html, body {
     font-weight: 500;
 }
 
-/* ---- Card common ---- */
+
 .card-title {
     font-size: 1.05rem;
     font-weight: 700;
     margin-bottom: 2px;
 }
 
-/* ---- Input Bar ---- */
+
 .input-bar {
     padding: 12px 24px 16px;
     background: var(--card-bg);
@@ -650,7 +642,7 @@ html, body {
     box-shadow: none;
 }
 
-/* ---- Loader Overlay ---- */
+
 .loader-overlay {
     position: fixed;
     inset: 0;
@@ -682,7 +674,7 @@ html, body {
     font-weight: 500;
 }
 
-/* ---- Responsive ---- */
+
 @media (max-width: 640px) {
     .form-row {
         flex-direction: column;
@@ -710,7 +702,7 @@ html, body {
     }
 }
 
-/* ---- Inline Loader (typing dots) ---- */
+
 .typing-indicator {
     display: flex;
     align-items: center;
@@ -738,7 +730,7 @@ html, body {
     30%           { transform: translateY(-6px); }
 }
 
-/* ---- Scrollbar styling ---- */
+
 .conversation::-webkit-scrollbar {
     width: 6px;
 }
@@ -753,7 +745,7 @@ html, body {
     background: #9CA3AF;
 }
 
-/* ---- Confetti animation for conclude ---- */
+
 .confetti-wrapper {
     position: fixed;
     inset: 0;
@@ -775,7 +767,7 @@ html, body {
     100% { opacity: 0; transform: translateY(100vh) rotate(720deg); }
 }
 
-/* ---- Start Q&A Button ---- */
+
 .start-quiz-wrapper {
     text-align: center;
     padding: 24px 0;
@@ -809,7 +801,7 @@ html, body {
     color: var(--text-secondary);
 }
 
-/* ---- Doubt Panel (Right-side Chatbot) ---- */
+
 .doubt-panel {
     width: 380px;
     max-width: 42%;

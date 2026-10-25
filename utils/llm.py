@@ -14,7 +14,6 @@ def get_llm():
             "GROQ_API_KEY is not set in environment or .env file."
         )
 
-    # Remove accidental whitespace or surrounding quotes
     api_key = api_key.strip().strip('"\'')
     
     model = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
