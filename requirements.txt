@@ -1,11 +1,23 @@
-langgraph
-langchain
-langchain-core
-langchain_groq
-langchain-google-genai
-python-dotenv
-streamlit
-apscheduler
-sqlalchemy
-fastapi
-uvicorn
+# Web Server & API Framework
+fastapi>=0.110.0
+uvicorn[standard]>=0.28.0
+python-multipart>=0.0.9
+aiofiles>=23.2.1
+pydantic>=2.0.0
+
+# LLM & AI Agent Framework
+langchain>=0.2.0
+langchain-core>=0.2.0
+langchain-groq>=0.1.0
+langgraph>=0.1.0
+
+# Document Ingestion
+pypdf>=4.0.0
+
+# Environment & Configuration
+python-dotenv>=1.0.0
+
+# Optional / Ancillary Features
+streamlit>=1.30.0
+apscheduler>=3.10.0
+sqlalchemy>=2.0.0
