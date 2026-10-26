@@ -3,8 +3,7 @@ from langgraph.graph import StateGraph, START, END
 from agent.state import RevisionState
 from agent.prompts import (
     NOTES_PROMPT,
-    QUESTIONS_PROMPT,
-    FLASHCARD_PROMPT,
+    QUESTION_PROMPT,
     EVALUATION_PROMPT
 )
 
@@ -22,7 +21,8 @@ def extract_text(response) -> str:
 def generate_notes(state: RevisionState):
     prompt = NOTES_PROMPT.format(
         topic=state["topic"],
-        difficulty=state["difficulty"]
+        difficulty=state["difficulty"],
+        source_material_section=""
     )
     response = llm.invoke(prompt)
     return {
@@ -31,94 +31,26 @@ def generate_notes(state: RevisionState):
 
 
 def generate_questions(state: RevisionState):
-    prompt = QUESTIONS_PROMPT.format(
+    prompt = QUESTION_PROMPT.format(
         topic=state["topic"],
-        difficulty=state["difficulty"]
+        difficulty=state["difficulty"],
+        source_material_section="",
+        previous_context=""
     )
     response = llm.invoke(prompt)
     text = extract_text(response)
 
-    import re
-    raw_lines = text.split("\n")
-    questions_list = []
-    for line in raw_lines:
-        cleaned = re.sub(r"^(?:\d+[\.\)]|Question\s*\d+[\:\.]?|[\-\*])\s*", "", line.strip()).strip()
-        cleaned = cleaned.replace("**", "")
-        if cleaned and len(cleaned) > 3:
-            questions_list.append({"question": cleaned})
-
-    if not questions_list and text:
-        questions_list = [{"question": text}]
-
     return {
-        "questions": questions_list
-    }
-
-
-def generate_flashcards(state: RevisionState):
-    prompt = FLASHCARD_PROMPT.format(
-        topic=state["topic"]
-    )
-
-    response = llm.invoke(prompt)
-    text = extract_text(response)
-    text = text.replace("\r\n", "\n")
-
-    import re
-    flashcards = []
-
-    pattern = re.compile(
-        r"(?:Card\s*\d+[\:\.\s]*)?"
-        r"(?:\#+\s*)?"
-        r"(?:\*\*)?Question(?:\s*\d+)?(?:\*\*)?[\:\.\s]+(.*?)"
-        r"(?:\*\*)?Answer(?:\s*\d+)?(?:\*\*)?[\:\.\s]+(.*?)"
-        r"(?=(?:Card\s*\d+|\#+\s*Card|\bQuestion\b|\Z))",
-        re.IGNORECASE | re.DOTALL
-    )
-
-    matches = pattern.findall(text)
-    for q, a in matches:
-        q_clean = q.strip().strip("*_#` \n")
-        a_clean = a.strip().strip("*_#` \n")
-        a_clean = re.split(r"\n\s*(?:Card|\#+)\s*\d+", a_clean, flags=re.IGNORECASE)[0].strip()
-        if q_clean and a_clean:
-            flashcards.append({
-                "question": q_clean,
-                "answer": a_clean
-            })
-
-    if not flashcards and text:
-        parts = re.split(r"(?i)(?=Card\s*\d+)", text)
-        for part in parts:
-            part = part.strip()
-            if not part:
-                continue
-            lines = [l.strip() for l in part.split("\n") if l.strip()]
-            q_str, a_str = "", ""
-            for l in lines:
-                if re.match(r"(?i)^(?:\*\*)?Question", l):
-                    q_str = re.sub(r"(?i)^(?:\*\*)?Question(?:\s*\d+)?(?:\*\*)?[\:\.\s]*", "", l).strip()
-                elif re.match(r"(?i)^(?:\*\*)?Answer", l):
-                    a_str = re.sub(r"(?i)^(?:\*\*)?Answer(?:\s*\d+)?(?:\*\*)?[\:\.\s]*", "", l).strip()
-            if q_str and a_str:
-                flashcards.append({"question": q_str, "answer": a_str})
-
-    if not flashcards and text:
-        flashcards.append({
-            "question": "Key Concepts to Revise",
-            "answer": text
-        })
-
-    return {
-        "flashcards": flashcards
+        "questions": [{"question": text}]
     }
 
 
 def evaluate_revision(state: RevisionState):
     prompt = EVALUATION_PROMPT.format(
         topic=state["topic"],
-        questions=state["questions"],
-        answers=state["user_answers"]
+        question=state.get("questions", [{}])[0].get("question", ""),
+        student_answer=state.get("user_answers", [""])[-1] if state.get("user_answers") else "",
+        source_material_section=""
     )
     response = llm.invoke(prompt)
     return {
@@ -131,14 +63,11 @@ def build_graph():
 
     graph.add_node("generate_notes", generate_notes)
     graph.add_node("generate_questions", generate_questions)
-    graph.add_node("generate_flashcards", generate_flashcards)
     graph.add_node("evaluate_revision", evaluate_revision)
 
     graph.add_edge(START, "generate_notes")
     graph.add_edge("generate_notes", "generate_questions")
-    graph.add_edge("generate_notes", "generate_flashcards")
     graph.add_edge("generate_questions", END)
-    graph.add_edge("generate_flashcards", END)
 
     return graph.compile()
 
