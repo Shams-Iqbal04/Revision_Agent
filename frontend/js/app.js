@@ -2,6 +2,7 @@
 
 let sessionId = null;
 let uploadedDocText = "";
+let uploadedDocFilename = "";
 let quizStarted = false;
 
 const $ = (id) => document.getElementById(id);
@@ -35,6 +36,8 @@ fileInput.addEventListener("change", async () => {
 
     uploadLabel.textContent = `📎 ${file.name}`;
     uploadArea.classList.add("has-file");
+    uploadStatus.textContent = "⏳ Reading and extracting text from file...";
+    uploadStatus.classList.remove("hidden");
 
     const formData = new FormData();
     formData.append("file", file);
@@ -43,12 +46,19 @@ fileInput.addEventListener("change", async () => {
         const res = await fetch("/api/upload", { method: "POST", body: formData });
         const data = await res.json();
         uploadedDocText = data.text || "";
-        uploadStatus.textContent = `✅ Extracted ${data.chars.toLocaleString()} characters from ${data.filename}`;
+        if (!res.ok) {
+            throw new Error(data.detail || "Upload failed");
+        }
+        uploadedDocFilename = data.filename || file.name;
+        uploadStatus.textContent = `✅ Extracted ${data.chars.toLocaleString()} characters from ${uploadedDocFilename}`;
         uploadStatus.classList.remove("hidden");
     } catch (err) {
-        uploadStatus.textContent = `❌ Upload failed: ${err.message}`;
+        uploadStatus.textContent = `❌ Upload error: ${err.message}`;
+        uploadedDocFilename = "";
+        fileInput.value = "";
         uploadStatus.classList.remove("hidden");
         uploadedDocText = "";
+    uploadedDocFilename = "";
     }
 });
 
@@ -90,7 +100,10 @@ async function apiPost(endpoint, body) {
 }
 
 async function startSession() {
-    const topic = $("topic-input").value.trim();
+    let topic = $("topic-input").value.trim();
+    if (!topic && uploadedDocFilename) {
+        topic = `Notes: ${uploadedDocFilename.replace(/\.[^/.]+$/, "")}`;
+    }
     const difficulty = $("difficulty-select").value;
 
     if (!topic && !uploadedDocText) {
@@ -98,7 +111,7 @@ async function startSession() {
         return;
     }
 
-    showLoader("AI Tutor is preparing your revision notes…");
+    showLoader(uploadedDocText ? "AI Tutor is analyzing your document and preparing notes…" : "AI Tutor is preparing your revision notes…");
 
     try {
         const data = await apiPost("/api/session/start", {
@@ -314,6 +327,19 @@ function switchMobileTab(tab) {
     }
 }
 
+window.addEventListener("resize", () => {
+    if (window.innerWidth <= 900) {
+        switchMobileTab(currentMobileTab);
+    } else {
+        const revPanel = document.querySelector(".revision-panel");
+        const doubtPanel = document.querySelector(".doubt-panel");
+        if (revPanel) revPanel.classList.remove("mobile-hidden");
+        if (doubtPanel) doubtPanel.classList.remove("mobile-hidden");
+    }
+});
+
+switchMobileTab("revision");
+
 async function resetSession() {
     switchMobileTab("revision");
     if (sessionId) {
@@ -345,6 +371,7 @@ async function resetSession() {
 
     $("topic-input").value = "";
     uploadedDocText = "";
+    uploadedDocFilename = "";
     uploadLabel.textContent = "📄 Choose PDF / TXT";
     uploadArea.classList.remove("has-file");
     uploadStatus.classList.add("hidden");

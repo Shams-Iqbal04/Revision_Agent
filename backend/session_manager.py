@@ -5,10 +5,11 @@ from agent.tutor_agent import step_tutor
 
 
 class Session:
-    def __init__(self, topic: str, difficulty: str):
+    def __init__(self, topic: str, difficulty: str, doc_text: Optional[str] = None):
         self.id: str = str(uuid.uuid4())
         self.topic: str = topic
         self.difficulty: str = difficulty
+        self.doc_text: Optional[str] = doc_text
         self.messages: list = []
         self.action_history: list = []
         self.student_answers: list = []
@@ -21,8 +22,8 @@ class SessionManager:
     def __init__(self):
         self._sessions: Dict[str, Session] = {}
 
-    def create(self, topic: str, difficulty: str) -> Session:
-        session = Session(topic, difficulty)
+    def create(self, topic: str, difficulty: str, doc_text: Optional[str] = None) -> Session:
+        session = Session(topic, difficulty, doc_text=doc_text)
         self._sessions[session.id] = session
         return session
 
@@ -37,9 +38,10 @@ class SessionManager:
         if not session:
             raise ValueError("Session not found")
 
+        doc_hint = " based strictly on my uploaded document notes" if session.doc_text else ""
         start_msg = HumanMessage(
             content=(
-                f"Hi, I want to revise {session.topic} at {session.difficulty} level. "
+                f"Hi, I want to revise {session.topic} at {session.difficulty} level{doc_hint}. "
                 f"Please start by calling give_revision_notes to give me comprehensive revision notes on this topic. "
                 f"Do NOT ask any questions yet — I will tell you when I am ready for questions."
             )
@@ -50,6 +52,7 @@ class SessionManager:
             session.messages,
             topic=session.topic,
             difficulty=session.difficulty,
+            doc_text=session.doc_text,
         )
         session.messages.append(res["response"])
         session.action_history.append(res)
@@ -84,6 +87,7 @@ class SessionManager:
             session.messages,
             topic=session.topic,
             difficulty=session.difficulty,
+            doc_text=session.doc_text,
         )
         session.messages.append(res["response"])
         session.action_history.append(res)
@@ -96,10 +100,17 @@ class SessionManager:
         if not has_question and not session.is_concluded:
             from utils.llm import get_llm
             q_llm = get_llm()
+            doc_context_str = (
+                f"\nSource Material / Notes:\n{session.doc_text[:12000]}\n"
+                if session.doc_text else ""
+            )
+            strict_str = "The question MUST be formulated directly from the Source Material above." if session.doc_text else ""
             q_prompt = (
                 f"You are conducting an active-recall revision session on: '{session.topic}' ({session.difficulty} level).\n"
+                f"{doc_context_str}"
                 f"The student just answered: '{answer}'.\n"
                 "Formulate the NEXT clear revision question to continue testing their understanding.\n"
+                f"{strict_str}\n"
                 "Return ONLY the question text ending with a question mark. No preamble or numbering."
             )
             q_res = q_llm.invoke(q_prompt)
@@ -139,6 +150,7 @@ class SessionManager:
             session.messages,
             topic=session.topic,
             difficulty=session.difficulty,
+            doc_text=session.doc_text,
         )
         session.messages.append(res["response"])
         session.action_history.append(res)
@@ -150,12 +162,21 @@ class SessionManager:
         session = self.get(session_id)
         topic = session.topic if session else "General Topic"
 
-        notes_text = ""
+        context_notes = ""
+        if session and session.doc_text:
+            context_notes += (
+                "--- UPLOADED SOURCE MATERIAL / PDF CONTENT ---\n"
+                f"{session.doc_text[:15000]}\n\n"
+            )
+
+        notes_from_turns = ""
         if session:
             for act in session.action_history:
                 for tc in act.get("tool_calls", []):
                     if tc.get("name") == "give_revision_notes":
-                        notes_text += tc.get("args", {}).get("notes", "") + "\n"
+                        notes_from_turns += tc.get("args", {}).get("notes", "") + "\n"
+        if notes_from_turns:
+            context_notes += f"--- REVISION NOTES IN SESSION ---\n{notes_from_turns[:3000]}\n"
 
         from utils.llm import get_llm
         from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
@@ -163,9 +184,11 @@ class SessionManager:
         system_msg = SystemMessage(
             content=(
                 f"You are an encouraging, expert AI Tutor helping a student revise '{topic}'.\n"
-                f"The student is asking questions or clarifying doubts about this topic.\n"
-                f"Context Notes:\n{notes_text[:2500] if notes_text else 'No specific notes.'}\n\n"
-                "Answer clearly, concisely, and helpfully. Use bullet points or code snippets when helpful."
+                f"The student is asking a doubt or question.\n"
+                f"{context_notes}\n"
+                "RULES:\n"
+                "- If source material from an uploaded PDF is provided above, answer strictly based on that material. Do not contradict it or give generic answers from the internet if the topic is covered in their document.\n"
+                "- Answer clearly, concisely, and helpfully. Use bullet points or code snippets when helpful."
             )
         )
 

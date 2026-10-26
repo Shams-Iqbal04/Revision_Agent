@@ -713,140 +713,6 @@ html, body {
     font-weight: 500;
 }
 
-
-@media (max-width: 900px) {
-    .mobile-tabs {
-        display: flex !important;
-    }
-
-    .session-body {
-        flex-direction: column;
-    }
-
-    .revision-panel {
-        width: 100%;
-        height: 100%;
-    }
-
-    .doubt-panel {
-        width: 100%;
-        max-width: 100%;
-        min-width: 0;
-        height: 100%;
-        border-left: none;
-    }
-
-    .mobile-hidden {
-        display: none !important;
-    }
-}
-
-@media (min-width: 901px) {
-    .mobile-tabs {
-        display: none !important;
-    }
-    .revision-panel {
-        display: flex !important;
-    }
-    .doubt-panel {
-        display: flex !important;
-    }
-}
-
-@media (max-width: 640px) {
-    .form-row {
-        flex-direction: column;
-    }
-    .top-bar {
-        padding: 8px 12px;
-        gap: 8px;
-    }
-    .top-bar-left {
-        gap: 8px;
-        min-width: 0;
-        flex: 1;
-    }
-    .top-bar-topic {
-        font-size: 0.88rem;
-        max-width: 140px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-    .top-bar-level {
-        font-size: 0.7rem;
-    }
-    .stat-pill {
-        padding: 4px 8px;
-        font-size: 0.75rem;
-    }
-    .btn-reset {
-        padding: 6px 10px;
-        font-size: 0.75rem;
-        min-height: 34px;
-    }
-    .conversation {
-        padding: 12px 10px;
-        gap: 12px;
-    }
-    .action-card,
-    .agent-text-bubble {
-        max-width: 100%;
-        padding: 14px 12px;
-    }
-    .student-bubble {
-        max-width: 92%;
-        padding: 12px 14px;
-    }
-    .card-title {
-        font-size: 0.98rem;
-    }
-    .notes-box {
-        padding: 12px 10px;
-    }
-    .key-points-box {
-        padding: 10px 12px;
-        font-size: 0.84rem;
-    }
-    .code-block {
-        font-size: 0.76rem;
-        padding: 10px 12px;
-    }
-    .btn-start-quiz {
-        width: 100%;
-        max-width: 100%;
-        padding: 12px 18px;
-        font-size: 0.95rem;
-    }
-    .start-hero h1 {
-        font-size: 1.65rem;
-    }
-    .start-card {
-        padding: 20px 14px;
-    }
-    #topic-input,
-    #difficulty-select,
-    #answer-input,
-    #doubt-input {
-        font-size: 16px;
-    }
-}
-
-@media (max-width: 480px) {
-    .top-bar-topic {
-        max-width: 110px;
-    }
-    .btn-end-quiz {
-        padding: 0 10px;
-        font-size: 0.78rem;
-    }
-    .mobile-tab-btn {
-        font-size: 0.78rem;
-        padding: 8px 6px;
-    }
-}
-
-
 .typing-indicator {
     display: flex;
     align-items: center;
@@ -1139,4 +1005,159 @@ html, body {
     background: #9CA3AF;
     cursor: not-allowed;
     transform: none;
+}
+
+/* ============================================================
+   RESPONSIVE MEDIA QUERIES (ALWAYS AT END FOR PROPER CASCADE)
+   ============================================================ */
+
+/* Desktop & Laptop (> 900px): Side-by-Side Split View */
+@media (min-width: 901px) {
+    .mobile-tabs {
+        display: none !important;
+    }
+    .session-body {
+        flex-direction: row !important;
+    }
+    .revision-panel {
+        display: flex !important;
+        flex: 1 1 0% !important;
+        min-width: 0 !important;
+        width: auto !important;
+        height: 100% !important;
+    }
+    .doubt-panel {
+        display: flex !important;
+        width: 380px !important;
+        min-width: 310px !important;
+        max-width: 42% !important;
+        height: 100% !important;
+        border-left: 1px solid var(--border) !important;
+    }
+}
+
+/* Tablet & Mobile (<= 900px): Clean Tab Switcher, Single Panel */
+@media (max-width: 900px) {
+    .mobile-tabs {
+        display: flex !important;
+    }
+
+    .session-body {
+        flex-direction: column !important;
+    }
+
+    .revision-panel {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        height: 100% !important;
+        flex: 1 1 auto !important;
+    }
+
+    .doubt-panel {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        height: 100% !important;
+        flex: 1 1 auto !important;
+        border-left: none !important;
+        box-shadow: none !important;
+    }
+
+    .mobile-hidden {
+        display: none !important;
+    }
+}
+
+@media (max-width: 640px) {
+    .form-row {
+        flex-direction: column;
+    }
+    .top-bar {
+        padding: 8px 12px;
+        gap: 8px;
+    }
+    .top-bar-left {
+        gap: 8px;
+        min-width: 0;
+        flex: 1;
+    }
+    .top-bar-topic {
+        font-size: 0.88rem;
+        max-width: 140px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .top-bar-level {
+        font-size: 0.7rem;
+    }
+    .stat-pill {
+        padding: 4px 8px;
+        font-size: 0.75rem;
+    }
+    .btn-reset {
+        padding: 6px 10px;
+        font-size: 0.75rem;
+        min-height: 34px;
+    }
+    .conversation {
+        padding: 12px 10px;
+        gap: 12px;
+    }
+    .action-card,
+    .agent-text-bubble {
+        max-width: 100%;
+        padding: 14px 12px;
+    }
+    .student-bubble {
+        max-width: 92%;
+        padding: 12px 14px;
+    }
+    .card-title {
+        font-size: 0.98rem;
+    }
+    .notes-box {
+        padding: 12px 10px;
+    }
+    .key-points-box {
+        padding: 10px 12px;
+        font-size: 0.84rem;
+    }
+    .code-block {
+        font-size: 0.76rem;
+        padding: 10px 12px;
+    }
+    .btn-start-quiz {
+        width: 100%;
+        max-width: 100%;
+        padding: 12px 18px;
+        font-size: 0.95rem;
+    }
+    .start-hero h1 {
+        font-size: 1.65rem;
+    }
+    .start-card {
+        padding: 20px 14px;
+    }
+    #topic-input,
+    #difficulty-select,
+    #answer-input,
+    #doubt-input {
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .top-bar-topic {
+        max-width: 110px;
+    }
+    .btn-end-quiz {
+        padding: 0 10px;
+        font-size: 0.78rem;
+    }
+    .mobile-tab-btn {
+        font-size: 0.78rem;
+        padding: 8px 6px;
+    }
 }

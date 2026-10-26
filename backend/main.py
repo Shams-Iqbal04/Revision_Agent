@@ -1,32 +1,29 @@
 import os
 import io
-import sys
-
-ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if ROOT_DIR not in sys.path:
-    sys.path.insert(0, ROOT_DIR)
-
+from typing import Optional
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional
+
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+FRONTEND_DIR = os.path.join(ROOT_DIR, "frontend")
 
 from backend.session_manager import SessionManager
 
-app = FastAPI(title="AI Revision Agent API")
+app = FastAPI(title="AI Revision Agent API", version="2.0.0")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 manager = SessionManager()
 
-FRONTEND_DIR = os.path.join(ROOT_DIR, "frontend")
 
 class StartRequest(BaseModel):
     topic: str
@@ -49,18 +46,15 @@ class DoubtRequest(BaseModel):
 
 @app.post("/api/session/start")
 async def start_session(req: StartRequest):
-    topic = req.topic
-    if req.doc_text:
-        topic += f"\n\nContext Notes:\n{req.doc_text[:3000]}"
-
-    session = manager.create(topic, req.difficulty)
+    topic = req.topic.strip() if req.topic else "Uploaded Study Notes"
+    session = manager.create(topic=topic, difficulty=req.difficulty, doc_text=req.doc_text)
     try:
         result = manager.start(session.id)
     except Exception as e:
         manager.delete(session.id)
         raise HTTPException(status_code=500, detail=str(e))
 
-    return {"topic": req.topic, "difficulty": req.difficulty, **result}
+    return {"topic": topic, "difficulty": req.difficulty, **result}
 
 
 @app.post("/api/session/respond")
@@ -71,16 +65,15 @@ async def respond(req: RespondRequest):
 
     try:
         result = manager.respond(req.session_id, req.answer)
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-    return result
 
 
 @app.post("/api/session/reset")
 async def reset_session(req: ResetRequest):
     manager.delete(req.session_id)
-    return {"success": True}
+    return {"status": "ok"}
 
 
 @app.post("/api/session/conclude")
@@ -113,19 +106,33 @@ async def upload_file(file: UploadFile = File(...)):
         try:
             import pypdf
             reader = pypdf.PdfReader(io.BytesIO(content))
-            text = "\n".join(
-                page.extract_text() or "" for page in reader.pages
-            )
+            pages_text = []
+            for i, page in enumerate(reader.pages):
+                extracted = page.extract_text()
+                if extracted and extracted.strip():
+                    pages_text.append(extracted.strip())
+            text = "\n\n".join(pages_text)
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Error reading PDF: {e}")
     else:
         text = content.decode("utf-8", errors="ignore")
+
+    text = text.strip()
+    if not text:
+        raise HTTPException(
+            status_code=400,
+            detail="Could not extract any readable text from this file. If it is a scanned PDF (image only), please provide a text-searchable PDF, TXT, or Markdown file."
+        )
 
     return {"text": text, "chars": len(text), "filename": file.filename}
 
 
 @app.get("/")
 async def index():
-    return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
+    response = FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
