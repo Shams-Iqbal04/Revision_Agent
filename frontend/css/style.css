@@ -237,7 +237,44 @@ html, body {
 #session-screen {
     flex-direction: column;
     height: 100vh;
+    height: 100dvh;
     overflow: hidden;
+}
+
+/* ---- Mobile Navigation Tabs (< 900px) ---- */
+.mobile-tabs {
+    display: none;
+    background: #FFFFFF;
+    border-bottom: 1px solid var(--border);
+    padding: 6px 12px;
+    gap: 8px;
+    z-index: 9;
+    flex-shrink: 0;
+}
+.mobile-tab-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: #F3F4F6;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-family: inherit;
+    cursor: pointer;
+    transition: all var(--transition);
+    min-height: 40px;
+}
+.mobile-tab-btn.active {
+    background: #EEF2FF;
+    border-color: #C7D2FE;
+    color: var(--primary);
+    font-weight: 700;
+    box-shadow: 0 1px 3px rgba(79, 70, 229, 0.1);
 }
 
 
@@ -548,7 +585,8 @@ html, body {
 
 
 .input-bar {
-    padding: 12px 24px 16px;
+    padding: 10px 16px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
     background: var(--card-bg);
     border-top: 1px solid var(--border);
     flex-shrink: 0;
@@ -556,9 +594,10 @@ html, body {
 .input-bar-inner {
     display: flex;
     align-items: flex-end;
-    gap: 10px;
+    gap: 8px;
     max-width: 900px;
     margin: 0 auto;
+    width: 100%;
 }
 
 #answer-input {
@@ -675,30 +714,135 @@ html, body {
 }
 
 
+@media (max-width: 900px) {
+    .mobile-tabs {
+        display: flex !important;
+    }
+
+    .session-body {
+        flex-direction: column;
+    }
+
+    .revision-panel {
+        width: 100%;
+        height: 100%;
+    }
+
+    .doubt-panel {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        height: 100%;
+        border-left: none;
+    }
+
+    .mobile-hidden {
+        display: none !important;
+    }
+}
+
+@media (min-width: 901px) {
+    .mobile-tabs {
+        display: none !important;
+    }
+    .revision-panel {
+        display: flex !important;
+    }
+    .doubt-panel {
+        display: flex !important;
+    }
+}
+
 @media (max-width: 640px) {
     .form-row {
         flex-direction: column;
     }
     .top-bar {
-        padding: 10px 14px;
-        flex-wrap: wrap;
+        padding: 8px 12px;
         gap: 8px;
     }
+    .top-bar-left {
+        gap: 8px;
+        min-width: 0;
+        flex: 1;
+    }
+    .top-bar-topic {
+        font-size: 0.88rem;
+        max-width: 140px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .top-bar-level {
+        font-size: 0.7rem;
+    }
+    .stat-pill {
+        padding: 4px 8px;
+        font-size: 0.75rem;
+    }
+    .btn-reset {
+        padding: 6px 10px;
+        font-size: 0.75rem;
+        min-height: 34px;
+    }
     .conversation {
-        padding: 16px;
+        padding: 12px 10px;
+        gap: 12px;
     }
     .action-card,
     .agent-text-bubble {
-        max-width: 95%;
+        max-width: 100%;
+        padding: 14px 12px;
     }
     .student-bubble {
-        max-width: 90%;
+        max-width: 92%;
+        padding: 12px 14px;
+    }
+    .card-title {
+        font-size: 0.98rem;
+    }
+    .notes-box {
+        padding: 12px 10px;
+    }
+    .key-points-box {
+        padding: 10px 12px;
+        font-size: 0.84rem;
+    }
+    .code-block {
+        font-size: 0.76rem;
+        padding: 10px 12px;
+    }
+    .btn-start-quiz {
+        width: 100%;
+        max-width: 100%;
+        padding: 12px 18px;
+        font-size: 0.95rem;
     }
     .start-hero h1 {
-        font-size: 1.7rem;
+        font-size: 1.65rem;
     }
     .start-card {
-        padding: 20px;
+        padding: 20px 14px;
+    }
+    #topic-input,
+    #difficulty-select,
+    #answer-input,
+    #doubt-input {
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .top-bar-topic {
+        max-width: 110px;
+    }
+    .btn-end-quiz {
+        padding: 0 10px;
+        font-size: 0.78rem;
+    }
+    .mobile-tab-btn {
+        font-size: 0.78rem;
+        padding: 8px 6px;
     }
 }
 
@@ -944,7 +1088,8 @@ html, body {
 .doubt-typing .dot:nth-child(3) { animation-delay: 0.3s; }
 
 .doubt-input-bar {
-    padding: 12px 14px;
+    padding: 10px 14px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
     border-top: 1px solid var(--border);
     background: #FFFFFF;
     display: flex;

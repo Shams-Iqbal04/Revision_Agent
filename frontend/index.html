@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI Revision Agent — Adaptive 1-on-1 Tutor</title>
-    <link rel="stylesheet" href="/static/css/style.css?v=4" />
+    <link rel="stylesheet" href="/static/css/style.css?v=5" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -83,6 +83,16 @@
             </div>
         </header>
 
+        <!-- Mobile Navigation Tabs (< 900px screens) -->
+        <nav class="mobile-tabs" id="mobile-tabs" aria-label="Mobile session tabs">
+            <button class="mobile-tab-btn active" id="tab-btn-revision" onclick="switchMobileTab('revision')">
+                📖 Revision & Quiz
+            </button>
+            <button class="mobile-tab-btn" id="tab-btn-doubt" onclick="switchMobileTab('doubt')">
+                💬 Ask Doubts
+            </button>
+        </nav>
+
         <div class="session-body">
             <div class="revision-panel">
                 <main class="conversation" id="conversation">
@@ -108,7 +118,7 @@
                 </footer>
             </div>
 
-            <aside class="doubt-panel">
+            <aside class="doubt-panel mobile-hidden">
                 <div class="doubt-header">
                     <div class="doubt-header-info">
                         <span class="doubt-header-icon">💬</span>
@@ -154,6 +164,6 @@
         </div>
     </div>
 
-    <script src="/static/js/app.js?v=4"></script>
+    <script src="/static/js/app.js?v=5"></script>
 </body>
 </html>

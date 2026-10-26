@@ -112,6 +112,7 @@ async function startSession() {
 
         topicDisplay.textContent = data.topic || topic;
         levelDisplay.textContent = data.difficulty;
+        switchMobileTab("revision");
         startScreen.classList.remove("active");
         sessionScreen.classList.add("active");
 
@@ -287,7 +288,34 @@ function scrollDoubtToBottom() {
     });
 }
 
+// ============================================================
+// Mobile Navigation Tabs (< 900px)
+// ============================================================
+let currentMobileTab = "revision";
+function switchMobileTab(tab) {
+    currentMobileTab = tab;
+    const revPanel = document.querySelector(".revision-panel");
+    const doubtPanel = document.querySelector(".doubt-panel");
+    const tabRev = $("tab-btn-revision");
+    const tabDoubt = $("tab-btn-doubt");
+
+    if (tab === "doubt") {
+        if (revPanel) revPanel.classList.add("mobile-hidden");
+        if (doubtPanel) doubtPanel.classList.remove("mobile-hidden");
+        if (tabRev) tabRev.classList.remove("active");
+        if (tabDoubt) tabDoubt.classList.add("active");
+        scrollDoubtToBottom();
+    } else {
+        if (revPanel) revPanel.classList.remove("mobile-hidden");
+        if (doubtPanel) doubtPanel.classList.add("mobile-hidden");
+        if (tabRev) tabRev.classList.add("active");
+        if (tabDoubt) tabDoubt.classList.remove("active");
+        scrollToBottom();
+    }
+}
+
 async function resetSession() {
+    switchMobileTab("revision");
     if (sessionId) {
         try {
             await apiPost("/api/session/reset", { session_id: sessionId });
