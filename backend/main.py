@@ -88,6 +88,14 @@ async def conclude_session(req: ConcludeRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/api/session/resume/{session_id}")
+async def resume_session(session_id: str):
+    data = manager.resume(session_id)
+    if not data:
+        raise HTTPException(status_code=404, detail="Session checkpoint not found")
+    return data
+
+
 @app.post("/api/chat/doubt")
 async def ask_doubt(req: DoubtRequest):
     try:

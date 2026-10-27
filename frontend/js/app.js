@@ -122,6 +122,7 @@ async function startSession() {
 
         sessionId = data.session_id;
         quizStarted = false;
+        try { localStorage.setItem("active_revision_session_id", data.session_id); } catch (_) {}
 
         topicDisplay.textContent = data.topic || topic;
         levelDisplay.textContent = data.difficulty;
@@ -340,6 +341,104 @@ window.addEventListener("resize", () => {
 
 switchMobileTab("revision");
 
+// ============================================================
+// Agent State Persistence / Fault-Tolerant Checkpointer
+// ============================================================
+async function resumeSession(savedSessionId) {
+    if (!savedSessionId) return;
+
+    try {
+        const res = await fetch(`/api/session/resume/${savedSessionId}`);
+        if (!res.ok) {
+            try { localStorage.removeItem("active_revision_session_id"); } catch (_) {}
+            return;
+        }
+
+        const data = await res.json();
+        sessionId = data.session_id;
+
+        topicDisplay.textContent = data.topic;
+        levelDisplay.textContent = data.difficulty;
+        statQuestions.textContent = data.questions_answered || 0;
+
+        conversation.innerHTML = "";
+
+        const actionHistory = data.action_history || [];
+        const studentAnswers = data.student_answers || [];
+
+        quizStarted = actionHistory.some(turn =>
+            (turn.actions || []).some(a => a.type === "ask_question")
+        );
+
+        actionHistory.forEach((turn, idx) => {
+            renderAgentTurn(turn, false);
+
+            const answerObj = studentAnswers.find(sa => sa.after_action_idx === idx);
+            if (answerObj && answerObj.answer) {
+                renderStudentAnswer(answerObj.answer);
+            }
+        });
+
+        if (!quizStarted && !data.is_concluded) {
+            renderStartQuizButton();
+            inputBar.classList.add("hidden");
+        } else {
+            inputBar.classList.remove("hidden");
+        }
+
+        if (data.is_concluded) {
+            inputBar.classList.add("hidden");
+            const endBtn = $("end-quiz-btn");
+            if (endBtn) endBtn.disabled = true;
+        }
+
+        if (data.doubt_history && data.doubt_history.length > 0) {
+            doubtMessages.innerHTML = "";
+            for (const msg of data.doubt_history) {
+                if (msg.role === "user") {
+                    const bubble = createElement("div", "doubt-bubble-user");
+                    bubble.textContent = msg.content;
+                    doubtMessages.appendChild(bubble);
+                } else {
+                    const bubble = createElement("div", "doubt-bubble-bot");
+                    bubble.innerHTML = `
+                        <div class="doubt-bubble-bot-label">AI Tutor</div>
+                        ${escapeAndFormat(msg.content)}
+                    `;
+                    doubtMessages.appendChild(bubble);
+                }
+            }
+            scrollDoubtToBottom();
+        }
+
+        startScreen.classList.remove("active");
+        sessionScreen.classList.add("active");
+        switchMobileTab(currentMobileTab || "revision");
+        scrollToBottom();
+    } catch (err) {
+        console.warn("Could not resume saved session:", err);
+    }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    switchMobileTab("revision");
+    try {
+        const savedSessionId = localStorage.getItem("active_revision_session_id");
+        if (savedSessionId) {
+            resumeSession(savedSessionId);
+        }
+    } catch (_) {}
+});
+
+window.addEventListener("online", () => {
+    try {
+        const savedSessionId = localStorage.getItem("active_revision_session_id");
+        if (savedSessionId && (!sessionId || sessionId !== savedSessionId)) {
+            resumeSession(savedSessionId);
+        }
+    } catch (_) {}
+});
+
 async function resetSession() {
     switchMobileTab("revision");
     if (sessionId) {
@@ -348,6 +447,7 @@ async function resetSession() {
         } catch (_) {  }
     }
 
+    try { localStorage.removeItem("active_revision_session_id"); } catch (_) {}
     sessionId = null;
     quizStarted = false;
     conversation.innerHTML = "";

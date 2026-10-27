@@ -2,6 +2,7 @@ import uuid
 from typing import Dict, List, Any, Optional
 from langchain_core.messages import HumanMessage, ToolMessage
 from agent.tutor_agent import step_tutor
+from backend.checkpoint_db import CheckpointDB
 
 
 class Session:
@@ -21,17 +22,38 @@ class Session:
 class SessionManager:
     def __init__(self):
         self._sessions: Dict[str, Session] = {}
+        self.checkpoint_db = CheckpointDB()
 
     def create(self, topic: str, difficulty: str, doc_text: Optional[str] = None) -> Session:
         session = Session(topic, difficulty, doc_text=doc_text)
         self._sessions[session.id] = session
+        self.checkpoint_db.save_checkpoint(session)
         return session
 
     def get(self, session_id: str) -> Optional[Session]:
-        return self._sessions.get(session_id)
+        session = self._sessions.get(session_id)
+        if session:
+            return session
+
+        # Auto-restore from SQLite checkpointer if server restarted or evicted from memory
+        data = self.checkpoint_db.load_checkpoint(session_id)
+        if data:
+            restored = Session(data["topic"], data["difficulty"], doc_text=data.get("doc_text"))
+            restored.id = data["id"]
+            restored.messages = data.get("messages", [])
+            restored.action_history = data.get("action_history", [])
+            restored.student_answers = data.get("student_answers", [])
+            restored.doubt_history = data.get("doubt_history", [])
+            restored.questions_answered = data.get("questions_answered", 0)
+            restored.is_concluded = data.get("is_concluded", False)
+            self._sessions[restored.id] = restored
+            return restored
+
+        return None
 
     def delete(self, session_id: str) -> None:
         self._sessions.pop(session_id, None)
+        self.checkpoint_db.delete_checkpoint(session_id)
 
     def start(self, session_id: str) -> dict:
         session = self.get(session_id)
@@ -56,6 +78,9 @@ class SessionManager:
         )
         session.messages.append(res["response"])
         session.action_history.append(res)
+
+        # Checkpoint after notes generated
+        self.checkpoint_db.save_checkpoint(session)
 
         return self._format_response(session, res)
 
@@ -121,6 +146,9 @@ class SessionManager:
                 "id": f"auto_q_{len(session.action_history)}"
             })
 
+        # Persist checkpoint after answering and next question generated
+        self.checkpoint_db.save_checkpoint(session)
+
         return self._format_response(session, res)
 
     def conclude(self, session_id: str) -> dict:
@@ -155,6 +183,9 @@ class SessionManager:
         session.messages.append(res["response"])
         session.action_history.append(res)
         session.is_concluded = True
+
+        # Persist concluded state
+        self.checkpoint_db.save_checkpoint(session)
 
         return self._format_response(session, res)
 
@@ -213,8 +244,37 @@ class SessionManager:
         if session:
             session.doubt_history.append({"role": "user", "content": question})
             session.doubt_history.append({"role": "assistant", "content": answer})
+            # Persist updated doubt conversation to SQLite
+            self.checkpoint_db.save_checkpoint(session)
 
         return {"answer": answer}
+
+    def resume(self, session_id: str) -> Optional[dict]:
+        """Restore and format entire session trajectory for frontend rehydration."""
+        session = self.get(session_id)
+        if not session:
+            return None
+
+        formatted_history = []
+        for act in session.action_history:
+            actions = []
+            for tc in act.get("tool_calls", []):
+                actions.append({"type": tc["name"], "args": tc.get("args", {})})
+            formatted_history.append({
+                "agent_text": act.get("content", "") or "",
+                "actions": actions
+            })
+
+        return {
+            "session_id": session.id,
+            "topic": session.topic,
+            "difficulty": session.difficulty,
+            "questions_answered": session.questions_answered,
+            "is_concluded": session.is_concluded,
+            "student_answers": session.student_answers,
+            "action_history": formatted_history,
+            "doubt_history": session.doubt_history,
+        }
 
     @staticmethod
     def _format_response(session: "Session", res: dict) -> dict:
