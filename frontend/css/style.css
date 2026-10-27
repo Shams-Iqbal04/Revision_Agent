@@ -585,6 +585,9 @@ html, body {
 
 
 .input-bar {
+    position: relative;
+    z-index: 10;
+    pointer-events: auto !important;
     padding: 10px 16px;
     padding-bottom: max(10px, env(safe-area-inset-bottom));
     background: var(--card-bg);
@@ -612,6 +615,10 @@ html, body {
     max-height: 140px;
     transition: border var(--transition), box-shadow var(--transition);
     line-height: 1.5;
+    pointer-events: auto !important;
+    touch-action: manipulation;
+    -webkit-user-select: text;
+    user-select: text;
 }
 #answer-input:focus {
     outline: none;
@@ -954,6 +961,9 @@ html, body {
 .doubt-typing .dot:nth-child(3) { animation-delay: 0.3s; }
 
 .doubt-input-bar {
+    position: relative;
+    z-index: 10;
+    pointer-events: auto !important;
     padding: 10px 14px;
     padding-bottom: max(10px, env(safe-area-inset-bottom));
     border-top: 1px solid var(--border);
@@ -976,6 +986,10 @@ html, body {
     max-height: 110px;
     line-height: 1.4;
     transition: border var(--transition), box-shadow var(--transition);
+    pointer-events: auto !important;
+    touch-action: manipulation;
+    -webkit-user-select: text;
+    user-select: text;
 }
 #doubt-input:focus {
     outline: none;

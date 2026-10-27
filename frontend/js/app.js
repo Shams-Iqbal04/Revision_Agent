@@ -86,17 +86,30 @@ doubtInput.addEventListener("keydown", (e) => {
     }
 });
 
-async function apiPost(endpoint, body) {
-    const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-    });
-    if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.detail || `HTTP ${res.status}`);
+async function apiPost(endpoint, body, timeoutMs = 25000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+        const res = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+            signal: controller.signal
+        });
+        clearTimeout(timer);
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.detail || `HTTP ${res.status}`);
+        }
+        return res.json();
+    } catch (err) {
+        clearTimeout(timer);
+        if (err.name === "AbortError") {
+            throw new Error("Network request timed out. Please check your internet connection.");
+        }
+        throw err;
     }
-    return res.json();
 }
 
 async function startSession() {
@@ -149,6 +162,8 @@ async function startQuiz() {
     inputBar.classList.remove("hidden");
     quizStarted = true;
     answerInput.placeholder = "Type your answer here…";
+    answerInput.disabled = false;
+    submitBtn.disabled = false;
 
     showTypingIndicator();
     scrollToBottom();
@@ -379,17 +394,31 @@ async function resumeSession(savedSessionId) {
             }
         });
 
+        // Ensure loaders and typing indicators are cleared
+        hideLoader();
+        removeTypingIndicator();
+
+        // Always unlock inputs on resume
+        answerInput.disabled = false;
+        submitBtn.disabled = false;
+        doubtInput.disabled = false;
+        doubtSubmitBtn.disabled = false;
+
         if (!quizStarted && !data.is_concluded) {
             renderStartQuizButton();
             inputBar.classList.add("hidden");
         } else {
             inputBar.classList.remove("hidden");
+            answerInput.placeholder = "Type your answer here…";
+            answerInput.focus();
         }
 
         if (data.is_concluded) {
             inputBar.classList.add("hidden");
             const endBtn = $("end-quiz-btn");
             if (endBtn) endBtn.disabled = true;
+            answerInput.disabled = true;
+            submitBtn.disabled = true;
         }
 
         if (data.doubt_history && data.doubt_history.length > 0) {
@@ -432,8 +461,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
 window.addEventListener("online", () => {
     try {
+        // Unlock inputs immediately in case an interrupted offline request froze them
+        answerInput.disabled = false;
+        submitBtn.disabled = false;
+        doubtInput.disabled = false;
+        doubtSubmitBtn.disabled = false;
+        removeTypingIndicator();
+        hideLoader();
+
         const savedSessionId = localStorage.getItem("active_revision_session_id");
-        if (savedSessionId && (!sessionId || sessionId !== savedSessionId)) {
+        if (savedSessionId) {
             resumeSession(savedSessionId);
         }
     } catch (_) {}
