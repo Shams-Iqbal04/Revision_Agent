@@ -1,7 +1,6 @@
 # 🎓 Revision Agent — AI-Powered Revision Tutor
 
-An AI-powered revision assistant that helps students **revise concepts, test their knowledge, learn from mistakes, and track their progress** through interactive question-and-answer sessions.
-
+An autonomous ReAct AI Tutor Agent designed for active-recall revision and personalized 1-on-1 learning. It generates comprehensive study notes, conducts continuous adaptive Q&A, and evaluates answers with actionable feedback. Features in-context PDF grounding, an interactive live doubt-clearing assistant, and fault-tolerant SQLite checkpointing for seamless session recovery across devices.
 ## ✨ Features
 
 - 📚 **AI-Generated Notes:** Generate revision notes for any topic.
