@@ -13,7 +13,7 @@ An autonomous ReAct AI Tutor Agent designed for active-recall revision and perso
 ## 🛠️ Tech Stack
 
 - **Backend:** Python, FastAPI, Uvicorn
-- **AI:** LangChain, Groq API
+- **AI:** LangGraph, Groq API
 - **Frontend:** HTML, CSS, JavaScript
 - **Environment Management:** uv
 
